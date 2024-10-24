@@ -1,18 +1,19 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import axios from 'axios';
 import debounce from 'lodash/debounce';
+import Quagga from 'quagga';
 import './App.css';
 
+const API_KEY = process.env.REACT_APP_API_KEY;
+
 function App() {
+  const [foodItems, setFoodItems] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState([]);
-  const [foodItems, setFoodItems] = useState([]);
   const [isScanning, setIsScanning] = useState(false);
-  const [cameraError, setCameraError] = useState(null);
+  const scannerRef = useRef(null);
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
-
-  const API_KEY = 'ucf5fVucfpFdKStqdbQaUq6uhodDWHSSAfT6hzUN'; // Replace with your actual API key
 
   const searchFood = async (query) => {
     if (!query) {
@@ -103,19 +104,15 @@ function App() {
 
   const startScanning = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { facingMode: 'environment' } 
-      });
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         videoRef.current.play();
       }
       setIsScanning(true);
-      setCameraError(null);
     } catch (err) {
       console.error("Error accessing the camera", err);
-      setCameraError(err.message);
-      setIsScanning(false);
+      alert("Unable to access the camera. Please make sure you've granted the necessary permissions.");
     }
   };
 
@@ -125,8 +122,34 @@ function App() {
       tracks.forEach(track => track.stop());
     }
     setIsScanning(false);
-    setCameraError(null);
   };
+
+  const handleBarcodeScan = useCallback(async (result) => {
+    stopScanning();
+    const barcode = result.codeResult.code;
+    try {
+      const response = await axios.get(
+        `https://world.openfoodfacts.org/api/v0/product/${barcode}.json`
+      );
+      if (response.data.status === 1) {
+        const product = response.data.product;
+        addFoodItem({
+          description: product.product_name,
+          foodNutrients: [
+            { nutrientName: 'Energy', value: product.nutriments.energy_100g },
+            { nutrientName: 'Protein', value: product.nutriments.proteins_100g },
+            { nutrientName: 'Carbohydrate, by difference', value: product.nutriments.carbohydrates_100g },
+            { nutrientName: 'Total lipid (fat)', value: product.nutriments.fat_100g },
+          ],
+        });
+      } else {
+        alert('Product not found');
+      }
+    } catch (error) {
+      console.error('Error fetching product data:', error);
+      alert('Error fetching product data');
+    }
+  }, [addFoodItem]);
 
   const captureImage = useCallback(() => {
     if (videoRef.current && canvasRef.current) {
@@ -143,6 +166,47 @@ function App() {
     }
   }, []);
 
+  useEffect(() => {
+    if (isScanning) {
+      Quagga.init(
+        {
+          inputStream: {
+            type: 'LiveStream',
+            constraints: {
+              width: 480,
+              height: 320,
+              facingMode: 'environment',
+            },
+            target: scannerRef.current,
+          },
+          locator: {
+            patchSize: 'medium',
+            halfSample: true,
+          },
+          numOfWorkers: 2,
+          decoder: {
+            readers: ['ean_reader'],
+          },
+          locate: true,
+        },
+        function (err) {
+          if (err) {
+            console.log(err);
+            return;
+          }
+          Quagga.start();
+        }
+      );
+
+      Quagga.onDetected(handleBarcodeScan);
+
+      return () => {
+        Quagga.offDetected(handleBarcodeScan);
+        Quagga.stop();
+      };
+    }
+  }, [isScanning, handleBarcodeScan]);
+
   return (
     <div className="App">
       <h1>Calorie Logger</h1>
@@ -152,7 +216,7 @@ function App() {
           <input
             type="text"
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={handleSearchChange}
             placeholder="Search for a food item"
           />
         </div>
@@ -162,21 +226,8 @@ function App() {
       </div>
 
       {isScanning && (
-        <div className="scanner-container">
+        <div ref={scannerRef} className="scanner-container">
           <video ref={videoRef} className="scanner-video" />
-          <canvas ref={canvasRef} style={{ display: 'none' }} />
-          <button onClick={captureImage} className="capture-btn">Capture</button>
-        </div>
-      )}
-
-      {cameraError && (
-        <div className="error-message">
-          <p>Unable to access the camera. Please make sure permission is granted.</p>
-          <p>Error details: {cameraError}</p>
-          <p>
-            On most browsers, you can click the camera icon in the address bar to grant permission.
-            If you don't see this icon, you may need to check your device's privacy settings.
-          </p>
         </div>
       )}
 
