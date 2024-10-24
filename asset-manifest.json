@@ -1,15 +1,15 @@
 {
   "files": {
-    "main.css": "/Calorie_Logger/static/css/main.28460bd9.css",
-    "main.js": "/Calorie_Logger/static/js/main.cadb59b3.js",
-    "static/js/453.85c5ba4e.chunk.js": "/Calorie_Logger/static/js/453.85c5ba4e.chunk.js",
+    "main.css": "/Calorie_Logger/static/css/main.3b60a91a.css",
+    "main.js": "/Calorie_Logger/static/js/main.27d913b6.js",
+    "static/js/453.41fff90b.chunk.js": "/Calorie_Logger/static/js/453.41fff90b.chunk.js",
     "index.html": "/Calorie_Logger/index.html",
-    "main.28460bd9.css.map": "/Calorie_Logger/static/css/main.28460bd9.css.map",
-    "main.cadb59b3.js.map": "/Calorie_Logger/static/js/main.cadb59b3.js.map",
-    "453.85c5ba4e.chunk.js.map": "/Calorie_Logger/static/js/453.85c5ba4e.chunk.js.map"
+    "main.3b60a91a.css.map": "/Calorie_Logger/static/css/main.3b60a91a.css.map",
+    "main.27d913b6.js.map": "/Calorie_Logger/static/js/main.27d913b6.js.map",
+    "453.41fff90b.chunk.js.map": "/Calorie_Logger/static/js/453.41fff90b.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.28460bd9.css",
-    "static/js/main.cadb59b3.js"
+    "static/css/main.3b60a91a.css",
+    "static/js/main.27d913b6.js"
   ]
 }
